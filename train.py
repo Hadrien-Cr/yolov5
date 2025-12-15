@@ -266,13 +266,13 @@ def train(
     nl = model.model[-1].nl  # number of detection layers (used for scaling hyp['obj'])
     imgsz = check_img_size(opt.imgsz, gs, floor=gs * 2)  # verify imgsz is gs-multiple
 
-    # DP mode
-    if cuda and RANK == -1 and torch.cuda.device_count() > 1:
-        logging.warning(
-            "DP not recommended, instead use torch.distributed.run for best DDP Multi-GPU results.\n"
-            "See Multi-GPU Tutorial at https://github.com/ultralytics/yolov5/issues/475 to get started."
-        )
-        model = torch.nn.DataParallel(model)
+    # # DP mode
+    # if cuda and RANK == -1 and torch.cuda.device_count() > 1:
+    #     logging.warning(
+    #         "DP not recommended, instead use torch.distributed.run for best DDP Multi-GPU results.\n"
+    #         "See Multi-GPU Tutorial at https://github.com/ultralytics/yolov5/issues/475 to get started."
+    #     )
+    #     model = torch.nn.DataParallel(model)
 
     # SyncBatchNorm
     if opt.sync_bn and cuda and RANK != -1:
@@ -741,31 +741,32 @@ def main(opt):
 
     # DDP mode
     device = select_device(opt.device, batch_size=opt.batch_size)
-    if LOCAL_RANK != -1:
-        from datetime import timedelta
+    # if LOCAL_RANK != -1:
+    #     from datetime import timedelta
 
-        assert (
-            torch.cuda.device_count() > LOCAL_RANK
-        ), "insufficient CUDA devices for DDP command"
-        assert (
-            opt.batch_size % WORLD_SIZE == 0
-        ), "--batch-size must be multiple of CUDA device count"
-        assert (
-            not opt.image_weights
-        ), "--image-weights argument is not compatible with DDP training"
-        assert not opt.evolve, "--evolve argument is not compatible with DDP training"
-        assert (
-            not opt.sync_bn
-        ), "--sync-bn known training issue, see https://github.com/ultralytics/yolov5/issues/3998"
-        torch.cuda.set_device(LOCAL_RANK)
-        device = torch.device("cuda", LOCAL_RANK)
-        dist.init_process_group(
-            backend="nccl" if dist.is_nccl_available() else "gloo",
-            timeout=timedelta(seconds=60),
-        )
+    #     assert (
+    #         torch.cuda.device_count() > LOCAL_RANK
+    #     ), "insufficient CUDA devices for DDP command"
+    #     assert (
+    #         opt.batch_size % WORLD_SIZE == 0
+    #     ), "--batch-size must be multiple of CUDA device count"
+    #     assert (
+    #         not opt.image_weights
+    #     ), "--image-weights argument is not compatible with DDP training"
+    #     assert not opt.evolve, "--evolve argument is not compatible with DDP training"
+    #     assert (
+    #         not opt.sync_bn
+    #     ), "--sync-bn known training issue, see https://github.com/ultralytics/yolov5/issues/3998"
+    #     torch.cuda.set_device(LOCAL_RANK)
+    #     device = torch.device("cuda", LOCAL_RANK)
+    #     dist.init_process_group(
+    #         backend="nccl" if dist.is_nccl_available() else "gloo",
+    #         timeout=timedelta(seconds=60),
+    #     )
 
     # Train
     if not opt.evolve:
+        print(device, LOCAL_RANK)
         train(opt.hyp, opt, device)
         if WORLD_SIZE > 1 and RANK == 0:
             _ = [
