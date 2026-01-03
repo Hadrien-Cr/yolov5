@@ -233,7 +233,6 @@ def train(
 
     # EMA
     ema = ModelEMA(model) if RANK in [-1, 0] else None
-
     # Resume
     start_epoch, best_fitness = 0, 0.0
     if pretrained:
@@ -403,10 +402,11 @@ def train(
         if RANK != -1:
             train_loader.sampler.set_epoch(epoch)
         pbar = enumerate(train_loader)
-        LOGGER.info(
-            ("\n" + "%10s" * 7)
-            % ("Epoch", "gpu_mem", "box", "obj", "cls", "labels", "img_size")
-        )
+        if epoch == start_epoch:
+            LOGGER.info(
+                ("\n" + "%10s" * 7)
+                % ("Epoch", "gpu_mem", "box", "obj", "cls", "labels", "img_size")
+            )
         if RANK in [-1, 0]:
             pbar = tqdm(pbar, total=nb)  # progress bar
         optimizer.zero_grad()
@@ -507,7 +507,7 @@ def train(
                 model, include=["yaml", "nc", "hyp", "names", "stride", "class_weights"]
             )
             final_epoch = epoch + 1 == epochs
-            if not noval or final_epoch:  # Calculate mAP
+            if not noval:  # Calculate mAP
                 results, maps, _ = val.run(
                     data_dict,
                     batch_size=batch_size // WORLD_SIZE * 2,
@@ -517,7 +517,7 @@ def train(
                     dataloader=val_loader,
                     save_dir=save_dir,
                     save_json=is_coco and final_epoch,
-                    verbose=nc < 50 and final_epoch,
+                    verbose=False,
                     plots=plots and final_epoch,
                     loggers=loggers,
                     compute_loss=compute_loss,
@@ -568,6 +568,7 @@ def train(
                         single_cls=single_cls,
                         dataloader=val_loader,
                         save_dir=save_dir,
+                        verbose=False,
                         save_json=True,
                         plots=False,
                     )
@@ -741,28 +742,28 @@ def main(opt):
 
     # DDP mode
     device = select_device(opt.device, batch_size=opt.batch_size)
-    # if LOCAL_RANK != -1:
-    #     from datetime import timedelta
+    if LOCAL_RANK != -1:
+        from datetime import timedelta
 
-    #     assert (
-    #         torch.cuda.device_count() > LOCAL_RANK
-    #     ), "insufficient CUDA devices for DDP command"
-    #     assert (
-    #         opt.batch_size % WORLD_SIZE == 0
-    #     ), "--batch-size must be multiple of CUDA device count"
-    #     assert (
-    #         not opt.image_weights
-    #     ), "--image-weights argument is not compatible with DDP training"
-    #     assert not opt.evolve, "--evolve argument is not compatible with DDP training"
-    #     assert (
-    #         not opt.sync_bn
-    #     ), "--sync-bn known training issue, see https://github.com/ultralytics/yolov5/issues/3998"
-    #     torch.cuda.set_device(LOCAL_RANK)
-    #     device = torch.device("cuda", LOCAL_RANK)
-    #     dist.init_process_group(
-    #         backend="nccl" if dist.is_nccl_available() else "gloo",
-    #         timeout=timedelta(seconds=60),
-    #     )
+        assert (
+            torch.cuda.device_count() > LOCAL_RANK
+        ), "insufficient CUDA devices for DDP command"
+        assert (
+            opt.batch_size % WORLD_SIZE == 0
+        ), "--batch-size must be multiple of CUDA device count"
+        assert (
+            not opt.image_weights
+        ), "--image-weights argument is not compatible with DDP training"
+        assert not opt.evolve, "--evolve argument is not compatible with DDP training"
+        assert (
+            not opt.sync_bn
+        ), "--sync-bn known training issue, see https://github.com/ultralytics/yolov5/issues/3998"
+        torch.cuda.set_device(LOCAL_RANK)
+        device = torch.device("cuda", LOCAL_RANK)
+        dist.init_process_group(
+            backend="nccl" if dist.is_nccl_available() else "gloo",
+            timeout=timedelta(seconds=60),
+        )
 
     # Train
     if not opt.evolve:
