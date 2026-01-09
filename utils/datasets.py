@@ -628,7 +628,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         desc = f"{prefix}Scanning '{path.parent / path.stem}' images and labels..."
         with Pool(NUM_THREADS) as pool:
             pbar = tqdm(
-                pool.imap_unordered(
+                pool.imap(
                     verify_image_label,
                     zip(self.img_files, self.label_files, repeat(prefix)),
                 ),
