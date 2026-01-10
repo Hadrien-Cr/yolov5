@@ -223,7 +223,7 @@ def run(
     )
     loss = torch.zeros(3, device=device)
     jdict, stats, ap, ap_class = [], [], [], []
-    for batch_i, (img, targets, paths, shapes) in enumerate(tqdm(dataloader, desc=s)):
+    for batch_i, (img, targets, paths, shapes) in enumerate(tqdm(dataloader, desc=s, mininterval=1.0)):
         t_ = time_sync()
         img = img.to(device, non_blocking=True)
         img = img.half() if half else img.float()  # uint8 to fp16/32
