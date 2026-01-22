@@ -643,6 +643,7 @@ def non_max_suppression(
     labels=(),
     max_det=300,
     return_full=False,
+    min_area=0.0,
 ):
     """Runs Non-Maximum Suppression (NMS) on inference results
 
@@ -674,12 +675,10 @@ def non_max_suppression(
 
     t = time.time()
     output = [torch.zeros((0, 6), device=prediction.device)] * prediction.shape[0]
+    
     for xi, x in enumerate(prediction):  # image index, image inference
-        # Apply constraints
-        # x[((x[..., 2:4] < min_wh) | (x[..., 2:4] > max_wh)).any(1), 4] = 0  # width-height
         x = x[xc[xi]]  # confidence
 
-        # Cat apriori labels if autolabelling
         if labels and len(labels[xi]):
             l = labels[xi]
             v = torch.zeros((len(l), nc + 5), device=x.device)
@@ -688,9 +687,18 @@ def non_max_suppression(
             v[range(len(l)), l[:, 0].long() + 5] = 1.0  # cls
             x = torch.cat((x, v), 0)
 
-        # If none remain process next image
         if not x.shape[0]:
             continue
+
+        # Filter by area
+        if min_area > 0:
+            # Using indices 2 and 3 assumes input is [center_x, center_y, width, height, ...]
+            area = x[:, 2] * x[:, 3]
+            x = x[area > min_area]
+
+        if not x.shape[0]:
+            continue
+
         x_raw = x.clone()
         x[:, 5:] *= x[:, 4:5]  # Compute combined conf for NMS math
 
