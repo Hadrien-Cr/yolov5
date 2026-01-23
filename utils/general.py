@@ -643,7 +643,7 @@ def non_max_suppression(
     labels=(),
     max_det=300,
     return_full=False,
-    min_area=0.0,
+    min_area=20*20,
 ):
     """Runs Non-Maximum Suppression (NMS) on inference results
 
