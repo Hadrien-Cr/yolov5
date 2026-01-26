@@ -517,6 +517,7 @@ def train(
                     single_cls=single_cls,
                     dataloader=val_loader,
                     save_dir=save_dir,
+                    iou_thres=0.5,
                     save_json=is_coco and final_epoch,
                     verbose=False,
                     plots=plots and final_epoch,
@@ -565,11 +566,11 @@ def train(
                         batch_size=batch_size // WORLD_SIZE * 2,
                         imgsz=imgsz,
                         model=attempt_load(m, device).half(),
-                        iou_thres=0.7,  # NMS IoU threshold for best pycocotools results
+                        iou_thres=0.5,  # NMS IoU threshold for best pycocotools results
                         single_cls=single_cls,
                         dataloader=val_loader,
                         save_dir=save_dir,
-                        verbose=False,
+                        verbose=True,
                         save_json=True,
                         plots=False,
                     )
