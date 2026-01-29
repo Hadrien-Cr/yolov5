@@ -252,7 +252,7 @@ def run(
         )  # for autolabelling
         t = time_sync()
         out = non_max_suppression(
-            out, conf_thres, iou_thres, labels=lb, multi_label=False, agnostic=single_cls
+            out, conf_thres, iou_thres, labels=lb, multi_label=False, agnostic=True
         )
         t2 += time_sync() - t
 
