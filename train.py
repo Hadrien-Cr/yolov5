@@ -408,7 +408,7 @@ def train(
                 % ("Epoch", "gpu_mem", "box", "obj", "cls", "labels", "img_size")
             )
         if RANK in [-1, 0]:
-            pbar = tqdm(pbar, total=nb, mininterval=10.0)  # progress bar
+            pbar = tqdm(pbar, total=nb, mininterval=10.0, disable = not epoch%10 == 0)  # progress bar
         optimizer.zero_grad()
         for i, (
             imgs,
